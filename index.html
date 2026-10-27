@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>متتبّع الـ Change Orders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#edf0f4;--card:#fff;--ink:#17202b;--muted:#5a6676;--line:#d5dbe3;--soft:#f4f6f9;--navy:#1d3557;--go:#0b7a75;--ok:#17803d;--warn:#9a5b00;--warn-bg:#fff4dd;--bad:#b42318;--bad-bg:#fdecea;--blue:#2b6cb0}
+{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "IBM Plex Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;font-variant-numeric:tabular-nums}
+header{background:var(--navy);color:#fff;padding:16px 14px 14px;display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+header h1{margin:0;font-size:20px}header p{margin:3px 0 0;color:#c9d6ea;font-size:13px}
+.badge{background:rgba(255,255,255,.15);border-radius:999px;padding:3px 12px;font-size:12.5px;white-space:nowrap}
+main{max-width:1000px;margin:0 auto;padding:12px 12px 80px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+h2{font-size:16px;margin:0 0 8px}h3{font-size:14px;margin:12px 0 4px}
+label{display:block;font-size:13.5px;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=password],input[type=datetime-local],select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font:inherit;color:var(--ink)}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #7aa7e0;outline-offset:1px}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 14px}
+button.primary{background:var(--go);border-color:var(--go);color:#fff;font-weight:600}
+button.sm{padding:4px 10px;font-size:13px}button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>{flex:1 1 180px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.hint{color:var(--muted);font-size:13px;margin:6px 0 0}
+.nav{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.nav button{flex:1 1 90px;padding:9px 6px;font-weight:600;border-radius:8px}
+.nav button[aria-selected=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.nav .n{background:var(--bad);color:#fff;border-radius:999px;font-size:11.5px;padding:0 7px;margin-inline-start:4px}
+.pick{display:flex;justify-content:center;align-items:center;border:2px dashed #9fb0c6;border-radius:10px;padding:20px 12px;background:var(--soft);cursor:pointer;color:var(--navy);font-weight:600;text-align:center}
+.pick input{position:absolute;opacity:0;width:1px;height:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px;margin:8px 0}
+.g{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 10px}.g b{display:block;font-size:20px;line-height:1.3}.g span{font-size:12px;color:var(--muted)}
+.g.bad b{color:var(--bad)}.g.ok b{color:var(--ok)}.g.warn b{color:var(--warn)}
+.note{border-radius:8px;padding:9px 12px;margin:8px 0;font-size:14px}
+.note.warn{background:var(--warn-bg);color:#5c3700;border:1px solid #f0d49a}.note.bad{background:var(--bad-bg);color:#6b1710;border:1px solid #f1b9b3}.note.ok{background:#e7f5ec;color:#0f4d26;border:1px solid #b7e0c6}
+.note ul{margin:4px 0 0;padding-inline-start:18px}
+.co{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.co-h{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.num{font-weight:700;direction:ltr;unicode-bidi:isolate}
+.chip{font-size:12px;border-radius:999px;padding:1px 9px;border:1px solid var(--line);background:var(--soft);color:var(--muted);white-space:nowrap}
+.chip.open{background:#e6f0fb;color:#1c4f86;border-color:#bcd3ee}.chip.closed{background:#e7f5ec;color:#0f4d26;border-color:#b7e0c6}.chip.cancelled{background:#f1f1f1;color:#444}.chip.unknown{background:var(--warn-bg);color:#5c3700;border-color:#f0d49a}
+.chip.relevant{background:#e7f5ec;color:#0f4d26;border-color:#b7e0c6}.chip.review{background:var(--warn-bg);color:#5c3700;border-color:#f0d49a}.chip.not_relevant{background:#f1f1f1;color:#555}
+.chip.flag{background:var(--bad-bg);color:#6b1710;border-color:#f1b9b3}
+.co-s{margin:4px 0;unicode-bidi:plaintext;word-break:break-word}.co-m{font-size:12.5px;color:var(--muted);direction:ltr;text-align:right;unicode-bidi:plaintext}
+.det{background:var(--soft);border-radius:6px;padding:8px 10px;margin-top:6px;font-size:13.5px}.det div{padding:1px 0;unicode-bidi:plaintext}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tablewrap{overflow-x:auto;direction:ltr;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:520px;direction:ltr;text-align:left;font-size:13.5px}
+th,td{padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}thead th{background:var(--navy);color:#fff;font-weight:600;font-size:12.5px}
+.pager{display:flex;gap:8px;align-items:center;justify-content:center;margin:10px 0}
+.empty{text-align:center;color:var(--muted);padding:24px 8px}
+#toast{position:fixed;inset-inline:12px;bottom:14px;max-width:520px;margin:0 auto;background:#17202b;color:#fff;padding:11px 14px;border-radius:8px;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:10}
+#toast.show{opacity:1;transform:none}#toast.err{background:var(--bad)}
+.busy{opacity:.6;pointer-events:none}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<header>
+<div><h1>متتبّع الـ Change Orders</h1><p>المرحلة 1: الاستيراد والسجل وقواعد الصلة</p></div>
+<span class="badge" id="conn">غير متصل</span>
+</header>
+<main>
+<div class="nav" role="tablist">
+<button type="button" role="tab" data-v="import" aria-selected="true">استيراد</button>
+<button type="button" role="tab" data-v="reg" aria-selected="false">السجل</button>
+<button type="button" role="tab" data-v="review" aria-selected="false">مراجعة<span class="n" id="nReview" hidden></span></button>
+<button type="button" role="tab" data-v="rules" aria-selected="false">القواعد</button>
+<button type="button" role="tab" data-v="log" aria-selected="false">السجل الزمني</button>
+<button type="button" role="tab" data-v="set" aria-selected="false">الإعدادات</button>
+</div>
+<section id="vImport">
+<div class="card">
+<h2>ملفات الـ Export</h2>
+<label class="pick"><input id="files" type="file" multiple accept=".xlsx,.xls"><span>اختار ملف أو أكتر (Open وClosed/Cancelled)</span></label>
+<p class="hint">الأداة بتعرف نوع الملف لوحدها من عمود Status. الملفات بتتقرا في المتصفح، وبتتبعت لـ Google Sheet بتاعك بس.</p>
+</div>
+<div id="fileCards"></div>
+</section>
+<section id="vReg" hidden>
+<div class="card">
+<div class="row">
+<div><label for="fStatus">الحالة</label><select id="fStatus"><option value="all">الكل</option><option value="open">مفتوح</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option><option value="unknown">حالة مش معروفة</option></select></div>
+<div><label for="fClass">الصلة</label><select id="fClass"><option value="rel">مهم + للمراجعة</option><option value="relevant">مهم</option><option value="review">للمراجعة</option><option value="not_relevant">مش مهم</option><option value="all">الكل</option></select></div>
+<div><label for="fSite">الموقع</label><select id="fSite"><option value="">الكل</option></select></div>
+<div><label for="fType">نوع الـ Change</label><select id="fType"><option value="">الكل</option></select></div>
+</div>
+<div class="row" style="margin-top:8px">
+<div><label for="fSearch">بحث (رقم / Summary / Category)</label><input id="fSearch" type="text"></div>
+<div><label for="fSort">الترتيب</label><select id="fSort"><option value="sched">موعد التنفيذ (الأحدث)</option><option value="open">تاريخ الفتح (الأحدث)</option><option value="id">رقم الـ CO</option></select></div>
+</div>
+<p class="hint" id="regCount"></p>
+</div>
+<div id="regList"></div><div class="pager" id="pager"></div>
+</section>
+<section id="vReview" hidden><div id="reviewBody"></div></section>
+<section id="vRules" hidden>
+<div class="card">
+<h2>قواعد الصلة</h2>
+<p class="hint">القاعدة صاحبة أعلى Priority هي اللي بتتطبّق، وسبب التصنيف بيظهر على كل CO. عدّل القواعد من شيت <b>Rules</b> في Google Sheet نفسه، وبعدها اضغط "إعادة التصنيف". قراراتك اليدوية مش بتتغيّر.</p>
+<div class="actions"><button type="button" class="primary" id="bReclass">إعادة التصنيف بالقواعد الحالية</button><button type="button" id="bRulesReload">تحديث القواعد</button></div>
+</div>
+<div class="card"><div class="tablewrap"><table><thead><tr><th>ID</th><th>On</th><th>Priority</th><th>Field</th><th>Match</th><th>Pattern</th><th>Result</th><th>Note</th></tr></thead><tbody id="rulesBody"></tbody></table></div></div>
+</section>
+<section id="vLog" hidden>
+<div class="card"><h2>آخر عمليات الاستيراد</h2><div class="tablewrap"><table><thead><tr><th>ID</th><th>When</th><th>Kind</th><th>File</th><th>Rows</th><th>New</th><th>Upd</th><th>Same</th><th>Conf</th><th>Chg</th><th>Err</th></tr></thead><tbody id="impBody"></tbody></table></div></div>
+<div class="card"><h2>أخطاء الاستيراد (آخر 200)</h2><div class="tablewrap"><table><thead><tr><th>Import</th><th>Row</th><th>CO</th><th>Problem</th></tr></thead><tbody id="errBody"></tbody></table></div></div>
+</section>
+<section id="vSet" hidden>
+<div class="card">
+<h2>الإعدادات</h2>
+<div class="row">
+<div><label for="cUrl">رابط Apps Script (/exec)</label><input id="cUrl" type="text" dir="ltr" placeholder="https://script.google.com/macros/s/.../exec"></div>
+<div><label for="cToken">كلمة السر (ADMIN_TOKEN)</label><input id="cToken" type="password" dir="ltr" autocomplete="off"></div>
+</div>
+<div class="actions"><button type="button" class="primary" id="cSave">حفظ</button><button type="button" id="cPing">اختبار الاتصال</button></div>
+</div>
+</section>
+</main>
+<div id="toast" role="status"></div>
+<script>
+(function () {
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const cfg = { url: lsGet('co_url') || '', token: lsGet('co_token') || '' };
+const S = { files: [], reg: null, cols: [], meta: null, view: 'import', page: 0, open: {}, nextId: 1 };
+const CLS_AR = { relevant: 'مهم', review: 'للمراجعة', not_relevant: 'مش مهم' };
+const GRP_AR = { open: 'مفتوح', closed: 'Closed', cancelled: 'Cancelled', unknown: 'حالة غير معروفة' };
+const DATE_COLS = ['Open Date', 'Schedule Start', 'Schedule End', 'Service Target', 'Projected Violation'];
+const PAGE = 40;
+function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : ''); clearTimeout(toast.h); toast.h = setTimeout(() => { t.className = ''; }, err ? 7000 : 3000); }
+const ready = () => !!(cfg.url && cfg.token);
+async function apiGet(params) { const q = new URLSearchParams(Object.assign({ token: cfg.token }, params)).toString(); return (await fetch(cfg.url + (cfg.url.indexOf('?') > -1 ? '&' : '?') + q)).json(); }
+async function apiPost(body) { return (await fetch(cfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ token: cfg.token }, body)) })).json(); }
+const readBuf = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error || new Error('read failed')); r.readAsArrayBuffer(f); });
+const pad = (n) => String(n).padStart(2, '0');
+const localIso = (ms) => { const d = new Date(ms); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const fmtD = (iso) => { const m = String(iso || '').match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1].slice(2) + ' ' + m[4] + ':' + m[5] : ''; };
+const TERMINAL = /^(closed|cancel+ed)$/i;
+// ---------- reading an export ----------
+async function parseFile(file) {
+const wb = XLSX.read(new Uint8Array(await readBuf(file)), { type: 'array' });
+const ws = wb.Sheets[wb.SheetNames[0]];
+const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', blankrows: false });
+if (!aoa.length) return { columns: [], rows: [] };
+const seen = {};
+const columns = aoa[0].map((h) => { const k = String(h).trim(); seen[k] = (seen[k] || 0) + 1; return seen[k] > 1 ? k + '_' + (seen[k] - 1) : k; });
+const iso = (v) => (typeof v === 'number' ? new Date(Math.round((v - 25569) * 86400) * 1000).toISOString().slice(0, 19) : v);
+const rows = aoa.slice(1).map((r) => { const o = {}; columns.forEach((n, j) => { o[n] = DATE_COLS.indexOf(n) >= 0 ? iso(r[j]) : r[j]; }); return o; });
+return { columns, rows };
+}
+function guessKind(rows) { let t = 0, n = 0; rows.forEach((r) => { const s = String(r['Status'] || '').trim(); if (!s) return; n++; if (TERMINAL.test(s)) t++; }); return n && t / n >= 0.5 ? 'closed' : 'open'; }
+async function onFiles(list) {
+const files = Array.from(list || []);
+if (!files.length) return;
+document.body.classList.add('busy');
+try {
+for (const f of files) {
+const p = await parseFile(f);
+S.files.push({ id: S.nextId++, name: f.name, columns: p.columns, rows: p.rows, kind: guessKind(p.rows), snap: localIso(f.lastModified || Date.now()), result: null, busy: false });
+}
+renderFiles();
+} catch (e) { toast('مقدرتش أقرا الملف: ' + e.message, true); }
+document.body.classList.remove('busy');
+}
+function resultHtml(r) {
+if (!r) return '';
+if (!r.ok) return '<div class="note bad"><b>اتوقف الاستيراد.</b> ' + esc(r.error) + '</div>';
+const c = r.counts, g = (v, l, cls) => '<div class="g ' + (cls || '') + '"><b>' + v + '</b><span>' + l + '</span></div>';
+let h = '<div class="note ' + (r.dryRun ? 'warn' : 'ok') + '"><b>' + (r.dryRun ? 'معاينة فقط: لسه مفيش حاجة اتكتبت.' : 'تم الاستيراد ' + esc(r.importId) + '.') + '</b></div>';
+h += '<div class="grid">' + g(c.rows, 'صفوف في الملف') + g(c.inserted, 'جديد', 'ok') + g(c.updated, 'اتحدّث') + g(c.unchanged, 'زي ما هو') + g(c.transitions, 'اتقفل / اتلغى', 'ok') +
+g(c.conflicts, 'تعارض', c.conflicts ? 'bad' : '') + g(c.missingFromOpen, 'ناقص من الـ Open', c.missingFromOpen ? 'warn' : '') + g(c.errors, 'أخطاء', c.errors ? 'bad' : '') + (c.skippedOld ? g(c.skippedOld, 'اتخطّى (ملف أقدم)') : '') + (c.duplicatesInFile ? g(c.duplicatesInFile, 'مكرر متطابق') : '') + '</div>';
+if (r.before && r.after) h += '<p class="hint">السجل قبل: ' + r.before.total + ' CO (مفتوح ' + r.before.byGroup.open + '، Closed ' + r.before.byGroup.closed + '، Cancelled ' + r.before.byGroup.cancelled + ') ← بعد: ' + r.after.total + ' CO (مفتوح ' + r.after.byGroup.open + '، Closed ' + r.after.byGroup.closed + '، Cancelled ' + r.after.byGroup.cancelled + ').</p>';
+if (r.warnings && r.warnings.length) h += '<div class="note warn"><ul>' + r.warnings.map((w) => '<li>' + esc(w) + '</li>').join('') + '</ul></div>';
+const list = (title, arr, fn) => (arr && arr.length ? '<details><summary>' + title + ' (' + arr.length + ')</summary><div class="det">' + arr.map(fn).join('') + '</div></details>' : '');
+h += list('اتقفل أو اتلغى', r.transitions, (t) => '<div>#' + esc(t.co_id) + ': ' + esc(t.from) + ' ← <b>' + esc(t.to) + '</b></div>');
+h += list('تعارضات تحتاج قرار (من تبويب مراجعة)', r.conflictIds, (id) => '<div>#' + esc(id) + '</div>');
+h += list('كانت مفتوحة ومش في الملف (مش معناها اتقفلت)', r.missingIds, (id) => '<div>#' + esc(id) + '</div>');
+h += list('جديد ومهم أو للمراجعة', r.newRelevant, (x) => '<div>#' + esc(x.co_id) + ' · <span class="chip ' + x.final_class + '">' + esc(CLS_AR[x.final_class]) + '</span> ' + esc(x.summary) + (x.sched_start ? ' <span class="co-m">' + esc(fmtD(x.sched_start)) + '</span>' : '') + '</div>');
+h += list('أخطاء في الصفوف (' + r.errorsTotal + ' إجمالي)', r.errors, (e) => '<div>صف ' + esc(e.row_no) + (e.co_id ? ' · #' + esc(e.co_id) : '') + ': ' + esc(e.problem) + '</div>');
+return h;
+}
+function renderFiles() {
+$('#fileCards').innerHTML = S.files.map((f) => '<div class="card" data-fid="' + f.id + '"><h2>' + esc(f.name) + '</h2>' +
+'<p class="hint">' + f.rows.length + ' صف · ' + f.columns.length + ' عمود · النوع اللي اتعرف: <b>' + (f.kind === 'closed' ? 'Closed / Cancelled' : 'Open') + '</b></p>' +
+'<div class="row"><div><label>وقت تصدير الملف</label><input type="datetime-local" data-snap dir="ltr" value="' + esc(f.snap) + '"></div></div>' +
+'<div class="actions"><button type="button" data-act="dry">معاينة</button><button type="button" class="primary" data-act="go">استيراد</button><button type="button" data-act="drop">شيل الملف</button></div>' +
+resultHtml(f.result) + '</div>').join('');
+}
+async function runImport(f, dry) {
+if (!ready()) { toast('ادخل الرابط وكلمة السر من الإعدادات الأول', true); return; }
+document.body.classList.add('busy');
+try {
+f.result = await apiPost({ action: 'import', kind: f.kind, snapshotAt: f.snap ? f.snap + ':00' : '', fileName: f.name, columns: f.columns, rows: f.rows, dryRun: !!dry });
+if (f.result.ok && !dry) { S.reg = null; S.meta = null; toast('تم الاستيراد'); }
+else if (!f.result.ok) toast('الاستيراد اتوقف', true);
+} catch (e) { f.result = { ok: false, error: 'مقدرتش أوصل للـ Apps Script: ' + e.message }; toast('فشل الاتصال', true); }
+document.body.classList.remove('busy'); renderFiles(); refreshBadge();
+}
+// ---------- register ----------
+const FIELD = (r, k) => r[k] || '';
+async function loadReg(force) {
+if (!ready()) return;
+if (S.reg && !force) return;
+const j = await apiGet({ action: 'list' });
+if (!j.ok) throw new Error(j.error === 'bad token' ? 'كلمة السر غلط' : j.error);
+S.cols = j.cols;
+S.reg = j.rows.map((row) => { const o = {}; j.cols.forEach((c, i) => { o[c] = row[i]; }); return o; });
+const uniq = (k) => Array.from(new Set(S.reg.map((r) => r[k]).filter(Boolean))).sort();
+$('#fSite').innerHTML = '<option value="">الكل</option>' + uniq('site').map((s) => '<option>' + esc(s) + '</option>').join('');
+$('#fType').innerHTML = '<option value="">الكل</option>' + uniq('change_type').map((s) => '<option>' + esc(s) + '</option>').join('');
+}
+function coCard(r, mode) {
+const open = !!S.open[r.co_id], flags = String(r.flags || '').split('|').filter(Boolean);
+const flagChips = flags.map((f) => '<span class="chip flag">' + esc(f.split(':')[0].replace(/_/g, ' ')) + '</span>').join('');
+const d = '<div class="det"><div><b>Category:</b> ' + esc(r.category) + '</div><div><b>Group:</b> ' + esc(r.group_name) + ' · <b>Type:</b> ' + esc(r.change_type) + ' · <b>Priority:</b> ' + esc(r.priority || '—') + '</div>' +
+'<div><b>Assigned To:</b> ' + esc(r.assigned_to || '—') + '</div><div><b>Open:</b> ' + esc(fmtD(r.open_date)) + ' · <b>Schedule:</b> ' + esc(fmtD(r.sched_start)) + ' ← ' + esc(fmtD(r.sched_end)) + '</div>' +
+'<div><b>سبب التصنيف:</b> ' + esc(r.auto_reason) + '</div>' + (r.manual_class ? '<div><b>قرارك:</b> ' + esc(CLS_AR[r.manual_class]) + (r.manual_note ? ' · ' + esc(r.manual_note) : '') + '</div>' : '') +
+'<div><b>أول مرة اتشاف:</b> ' + esc(fmtD(r.first_seen_at)) + (r.status_changed_at ? ' · <b>آخر تغيير حالة:</b> ' + esc(r.prev_status) + ' ← ' + esc(r.status) + ' (' + esc(fmtD(r.status_changed_at)) + ')' : '') + '</div></div>';
+const bt = (c, l) => '<button type="button" class="sm' + (r.final_class === c ? ' primary' : '') + '" data-act="cls" data-id="' + esc(r.co_id) + '" data-c="' + c + '">' + l + '</button>';
+return '<div class="co"><div class="co-h"><span class="num">#' + esc(r.co_id) + '</span><span class="chip ' + esc(r.status_group) + '">' + esc(r.status) + '</span><span class="chip ' + esc(r.final_class) + '">' + esc(CLS_AR[r.final_class] || r.final_class) + (r.manual_class ? ' (إنت)' : '') + '</span>' +
+(r.site ? '<span class="chip">' + esc(r.site) + '</span>' : '') + flagChips + '</div>' +
+'<div class="co-s">' + esc(r.summary) + '</div><div class="co-m">' + esc(r.category) + (r.sched_start ? ' · ' + esc(fmtD(r.sched_start)) : '') + '</div>' +
+(open ? d : '') + '<div class="btns"><button type="button" class="sm" data-act="det" data-id="' + esc(r.co_id) + '">' + (open ? 'اخفي التفاصيل' : 'التفاصيل') + '</button>' +
+(mode === 'conflict' ? '' : bt('relevant', 'مهم') + bt('review', 'للمراجعة') + bt('not_relevant', 'مش مهم') + (r.manual_class ? '<button type="button" class="sm" data-act="cls" data-id="' + esc(r.co_id) + '" data-c="">شيل قراري</button>' : '')) + '</div></div>';
+}
+function filtered() {
+const st = $('#fStatus').value, cl = $('#fClass').value, site = $('#fSite').value, ty = $('#fType').value, q = $('#fSearch').value.trim().toLowerCase();
+let a = (S.reg || []).filter((r) => (st === 'all' || r.status_group === st) && (cl === 'all' || (cl === 'rel' ? r.final_class !== 'not_relevant' : r.final_class === cl)) &&
+(!site || r.site === site) && (!ty || r.change_type === ty) && (!q || (r.co_id + ' ' + r.summary + ' ' + r.category).toLowerCase().indexOf(q) >= 0));
+const s = $('#fSort').value;
+a.sort((x, y) => (s === 'id' ? Number(y.co_id) - Number(x.co_id) : s === 'open' ? (y.open_date > x.open_date ? 1 : -1) : (y.sched_start > x.sched_start ? 1 : y.sched_start < x.sched_start ? -1 : 0)));
+return a;
+}
+function renderReg() {
+if (!S.reg) { $('#regList').innerHTML = '<div class="card empty">' + (ready() ? 'بحمّل السجل…' : 'ادخل الرابط وكلمة السر من الإعدادات.') + '</div>'; return; }
+const a = filtered(), pages = Math.max(1, Math.ceil(a.length / PAGE));
+S.page = Math.min(S.page, pages - 1);
+$('#regCount').textContent = a.length + ' من ' + S.reg.length + ' CO';
+$('#regList').innerHTML = a.length ? a.slice(S.page * PAGE, S.page * PAGE + PAGE).map((r) => coCard(r)).join('') : '<div class="card empty">مفيش نتايج بالفلاتر دي.</div>';
+$('#pager').innerHTML = pages > 1 ? '<button type="button" class="sm" data-pg="-1"' + (S.page ? '' : ' disabled') + '>السابق</button><span>' + (S.page + 1) + ' / ' + pages + '</span><button type="button" class="sm" data-pg="1"' + (S.page < pages - 1 ? '' : ' disabled') + '>التالي</button>' : '';
+}
+// ---------- review ----------
+const hasFlag = (r, n) => String(r.flags || '').split('|').some((f) => f.split(':')[0] === n);
+function reviewLists() {
+const reg = S.reg || [];
+return { conflicts: reg.filter((r) => hasFlag(r, 'conflict_reopen') || hasFlag(r, 'conflict_status')),
+review: reg.filter((r) => r.final_class === 'review' && r.status_group !== 'closed' && r.status_group !== 'cancelled'),
+missing: reg.filter((r) => hasFlag(r, 'not_in_latest_open')), unknown: reg.filter((r) => r.status_group === 'unknown') };
+}
+function refreshBadge() {
+const l = reviewLists(), n = l.conflicts.length + l.review.length + l.unknown.length;
+const b = $('#nReview'); b.hidden = !n; b.textContent = n;
+}
+function renderReview() {
+if (!S.reg) { $('#reviewBody').innerHTML = '<div class="card empty">' + (ready() ? 'بحمّل…' : 'ادخل الإعدادات الأول.') + '</div>'; return; }
+const l = reviewLists();
+let h = '';
+h += '<div class="card"><h2>تعارضات تحتاج قرار (' + l.conflicts.length + ')</h2>' + (l.conflicts.length ? l.conflicts.map((r) => {
+const fl = String(r.flags).split('|').find((f) => f.indexOf('conflict_') === 0), inc = fl.slice(fl.indexOf(':') + 1);
+return '<div class="note bad">#' + esc(r.co_id) + ': المسجّل <b>' + esc(r.status) + '</b> والملف الأخير قال <b>' + esc(inc) + '</b>.<div class="btns"><button type="button" class="sm" data-act="res" data-id="' + esc(r.co_id) + '" data-a="keep">سيبه ' + esc(r.status) + '</button><button type="button" class="sm primary" data-act="res" data-id="' + esc(r.co_id) + '" data-a="accept">اقبل ' + esc(inc) + '</button></div></div>' + coCard(r, 'conflict');
+}).join('') : '<p class="hint">مفيش تعارضات. ✅</p>') + '</div>';
+h += '<div class="card"><h2>مفتوحة وللمراجعة (' + l.review.length + ')</h2><p class="hint">COs مفتوحة مش قادر أحدد لوحدي لو تهمك. اختار مهم أو مش مهم، وقرارك بيفضل بعد أي استيراد.</p>' + (l.review.length ? l.review.slice(0, 60).map((r) => coCard(r)).join('') + (l.review.length > 60 ? '<p class="hint">اتعرض أول 60. الباقي من تبويب السجل.</p>' : '') : '<p class="hint">مفيش حاجة للمراجعة. ✅</p>') + '</div>';
+if (l.unknown.length) h += '<div class="card"><h2>حالات مش معروفة (' + l.unknown.length + ')</h2><p class="hint">الحالة دي مش من اللي اتعرّفت عليهم (RFC، Approved، Implementation in progress، Deployed، Open، Closed، Cancelled).</p>' + l.unknown.map((r) => coCard(r)).join('') + '</div>';
+h += '<div class="card"><h2>كانت مفتوحة ومش في آخر Open (' + l.missing.length + ')</h2><p class="hint">مش معناها إنها اتقفلت. بتتأكد لما تظهر في ملف Closed أو Cancelled.</p>' +
+(l.missing.length ? '<div class="det">' + l.missing.slice(0, 80).map((r) => '<div>#' + esc(r.co_id) + ' · ' + esc(r.status) + ' · ' + esc(r.summary) + '</div>').join('') + '</div>' : '<p class="hint">لا حاجة.</p>') + '</div>';
+$('#reviewBody').innerHTML = h;
+}
+// ---------- rules + log ----------
+async function loadMeta(force) { if (!ready() || (S.meta && !force)) return; const j = await apiGet({ action: 'meta' }); if (!j.ok) throw new Error(j.error); S.meta = j; }
+function renderRules() {
+const rows = (S.meta && S.meta.rules) || [];
+$('#rulesBody').innerHTML = rows.length ? rows.map((r) => '<tr><td>' + esc(r.rule_id) + '</td><td>' + esc(r.enabled) + '</td><td>' + esc(r.priority) + '</td><td>' + esc(r.field) + '</td><td>' + esc(r.op) + '</td><td>' + esc(r.pattern) + '</td><td>' + esc(r.outcome) + '</td><td>' + esc(r.note) + '</td></tr>').join('') : '<tr><td colspan="8">مفيش قواعد لسه</td></tr>';
+}
+function renderLog() {
+const m = S.meta || { imports: [], errors: [] };
+$('#impBody').innerHTML = m.imports.length ? m.imports.map((i) => '<tr><td>' + esc(i.import_id) + '</td><td>' + esc(String(i.at).replace('T', ' ').slice(0, 16)) + '</td><td>' + esc(i.kind) + '</td><td>' + esc(i.file_name) + '</td><td>' + esc(i.rows) + '</td><td>' + esc(i.inserted) + '</td><td>' + esc(i.updated) + '</td><td>' + esc(i.unchanged) + '</td><td>' + esc(i.conflicts) + '</td><td>' + esc(i.transitions) + '</td><td>' + esc(i.errors) + '</td></tr>').join('') : '<tr><td colspan="11">لسه مفيش استيراد</td></tr>';
+$('#errBody').innerHTML = m.errors.length ? m.errors.slice().reverse().map((e) => '<tr><td>' + esc(e.import_id) + '</td><td>' + esc(e.row_no) + '</td><td>' + esc(e.co_id) + '</td><td>' + esc(e.problem) + '</td></tr>').join('') : '<tr><td colspan="4">مفيش أخطاء مسجّلة</td></tr>';
+}
+// ---------- views ----------
+async function setView(v) {
+S.view = v;
+['import', 'reg', 'review', 'rules', 'log', 'set'].forEach((k) => { $('#v' + k.charAt(0).toUpperCase() + k.slice(1)).hidden = k !== v; });
+document.querySelectorAll('.nav button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.v === v)));
+try {
+if (v === 'reg' || v === 'review') { renderReg(); await loadReg(false); S.page = 0; renderReg(); renderReview(); refreshBadge(); }
+if (v === 'rules') { await loadMeta(false); renderRules(); }
+if (v === 'log') { await loadMeta(true); renderLog(); }
+} catch (e) { toast('مقدرتش أحمّل: ' + e.message, true); }
+}
+async function classify(id, cls) {
+let note = '';
+if (cls && typeof window.prompt === 'function') { const p = window.prompt('ملاحظة على قرارك (اختياري)', ''); if (p === null) return; note = p; }
+try {
+const j = await apiPost({ action: 'classify', id, cls, note });
+if (!j.ok) throw new Error(j.error);
+const i = S.reg.findIndex((r) => r.co_id === id); if (i >= 0) S.reg[i] = Object.assign(S.reg[i], j.record);
+toast('اتحفظ'); renderReg(); renderReview(); refreshBadge();
+} catch (e) { toast('فشل: ' + e.message, true); }
+}
+async function resolve(id, action) {
+try {
+const j = await apiPost({ action: 'resolve', id, decision: action });
+if (!j.ok) throw new Error(j.error);
+await loadReg(true); renderReview(); renderReg(); refreshBadge(); toast('اتحل التعارض');
+} catch (e) { toast('فشل: ' + e.message, true); }
+}
+function init() {
+$('#cUrl').value = cfg.url; $('#cToken').value = cfg.token;
+$('#conn').textContent = ready() ? 'متوصل' : 'غير متصل';
+document.querySelectorAll('.nav button').forEach((b) => b.addEventListener('click', () => setView(b.dataset.v)));
+$('#files').addEventListener('change', (e) => onFiles(e.target.files));
+$('#fileCards').addEventListener('click', (e) => {
+const b = e.target.closest('[data-act]'); if (!b) return;
+const card = b.closest('[data-fid]'), f = S.files.find((x) => x.id === Number(card.dataset.fid));
+if (b.dataset.act === 'dry') runImport(f, true); else if (b.dataset.act === 'go') runImport(f, false);
+else if (b.dataset.act === 'drop') { S.files = S.files.filter((x) => x !== f); renderFiles(); }
+});
+$('#fileCards').addEventListener('change', (e) => { if (e.target.hasAttribute('data-snap')) { const f = S.files.find((x) => x.id === Number(e.target.closest('[data-fid]').dataset.fid)); f.snap = e.target.value; } });
+const act = (e) => {
+const b = e.target.closest('[data-act]'); if (!b) return;
+const id = b.dataset.id;
+if (b.dataset.act === 'det') { S.open[id] = !S.open[id]; renderReg(); renderReview(); }
+else if (b.dataset.act === 'cls') classify(id, b.dataset.c);
+else if (b.dataset.act === 'res') resolve(id, b.dataset.a);
+};
+$('#regList').addEventListener('click', act); $('#reviewBody').addEventListener('click', act);
+['fStatus', 'fClass', 'fSite', 'fType', 'fSort'].forEach((id) => $('#' + id).addEventListener('change', () => { S.page = 0; renderReg(); }));
+$('#fSearch').addEventListener('input', () => { S.page = 0; renderReg(); });
+$('#pager').addEventListener('click', (e) => { const b = e.target.closest('[data-pg]'); if (b) { S.page += Number(b.dataset.pg); renderReg(); window.scrollTo(0, 0); } });
+$('#bReclass').addEventListener('click', async () => {
+try { const j = await apiPost({ action: 'reclassify' }); if (!j.ok) throw new Error(j.error); S.reg = null; S.meta = null; await loadMeta(true); renderRules(); toast('اتعاد التصنيف: ' + j.changed + ' CO اتغيّروا' + (j.badRules.length ? ' · قواعد فيها خطأ: ' + j.badRules.join('، ') : '')); } catch (e) { toast('فشل: ' + e.message, true); }
+});
+$('#bRulesReload').addEventListener('click', async () => { try { await loadMeta(true); renderRules(); toast('اتحدّثت القواعد'); } catch (e) { toast('فشل: ' + e.message, true); } });
+$('#cSave').addEventListener('click', () => { cfg.url = $('#cUrl').value.trim(); cfg.token = $('#cToken').value.trim(); lsSet('co_url', cfg.url); lsSet('co_token', cfg.token); S.reg = null; S.meta = null; $('#conn').textContent = ready() ? 'متوصل' : 'غير متصل'; toast('اتحفظت الإعدادات'); });
+$('#cPing').addEventListener('click', async () => {
+const u = $('#cUrl').value.trim(), t = $('#cToken').value.trim();
+if (!u) { toast('اكتب الرابط الأول', true); return; }
+try { const j = await (await fetch(u + (u.indexOf('?') > -1 ? '&' : '?') + 'action=ping&token=' + encodeURIComponent(t))).json(); j.ok ? toast('الاتصال شغال') : toast('الرابط شغال بس كلمة السر غلط', true); }
+catch (e) { toast('مقدرتش أوصل للرابط. اتأكد إن الـ Deploy على Anyone', true); }
+});
+if (ready()) loadReg(false).then(refreshBadge).catch(() => {});
+}
+window.__S = S; window.__setView = setView;
+init();
+})();
+</script>
+</body>
+</html>
